@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ingresos y Egresos</title>
+
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, Arial;
+  background: #f2f2f7;
+  margin: 0;
+  padding: 16px;
+}
+h1 {
+  text-align: center;
+}
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+input, select, button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 8px;
+  font-size: 16px;
+}
+button {
+  background: #007aff;
+  color: white;
+  border: none;
+  border-radius: 10px;
+}
+.ingreso { color: green; }
+.egreso { color: red; }
+.total {
+  text-align: center;
+  font-size: 22px;
+  margin: 10px 0;
+}
+ul {
+  list-style: none;
+  padding: 0;
+}
+li {
+  border-bottom: 1px solid #ddd;
+  padding: 10px 0;
+}
+</style>
+</head>
+
+<body>
+
+<h1>💰 Ingresos y Egresos</h1>
+
+<div class="card">
+  <input type="number" id="monto" placeholder="Monto">
+  <input type="text" id="descripcion" placeholder="Descripción">
+  <select id="tipo">
+    <option value="ingreso">Ingreso</option>
+    <option value="egreso">Egreso</option>
+  </select>
+  <button onclick="agregar()">Agregar</button>
+</div>
+
+<div class="card total">
+  Total disponible: <strong id="total">$0</strong>
+</div>
+
+<div class="card">
+  <ul id="lista"></ul>
+</div>
+
+<script>
+let movimientos = JSON.parse(localStorage.getItem("movimientos")) || [];
+
+function agregar() {
+  const monto = parseFloat(document.getElementById("monto").value);
+  const descripcion = document.getElementById("descripcion").value;
+  const tipo = document.getElementById("tipo").value;
+
+  if (!monto || !descripcion) {
+    alert("Completa todos los campos");
+    return;
+  }
+
+  movimientos.push({ monto, descripcion, tipo });
+  localStorage.setItem("movimientos", JSON.stringify(movimientos));
+
+  document.getElementById("monto").value = "";
+  document.getElementById("descripcion").value = "";
+
+  render();
+}
+
+function render() {
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "";
+  let total = 0;
+
+  movimientos.forEach((m, i) => {
+    total += m.tipo === "ingreso" ? m.monto : -m.monto;
+
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <span class="${m.tipo}">
+        ${m.tipo === "ingreso" ? "+" : "-"}$${m.monto}
+      </span>
+      - ${m.descripcion}
+      <br>
+      <button onclick="eliminar(${i})">Eliminar</button>
+    `;
+    lista.appendChild(li);
+  });
+
+  document.getElementById("total").innerText = "$" + total;
+}
+
+function eliminar(index) {
+  movimientos.splice(index, 1);
+  localStorage.setItem("movimientos", JSON.stringify(movimientos));
+  render();
+}
+
+render();
+</script>
+
+</body>
+</html>
