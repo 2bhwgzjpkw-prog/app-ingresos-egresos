@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis Cuentas</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, Arial;
+  background: #f2f2f7;
+}
+
+/* Layout */
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 30%;
+  background: #fff;
+  border-right: 1px solid #ddd;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-header h2 {
+  margin: 0;
+}
+
+.add-btn {
+  font-size: 26px;
+  background: #007aff;
+  color: white;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 34px;
+  cursor: pointer;
+}
+
+.cuenta {
+  padding: 10px;
+  margin-top: 8px;
+  border-radius: 10px;
+  background: #f2f2f7;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cuenta.activa {
+  background: #007aff;
+  color: white;
+}
+
+.delete {
+  font-size: 14px;
+  color: red;
+  cursor: pointer;
+}
+
+/* Main */
+.main {
+  width: 70%;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+input, select, button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  font-size: 16px;
+}
+
+button {
+  background: #007aff;
+  color: white;
+  border: none;
+  border-radius: 10px;
+}
+
+.mov {
+  border-bottom: 1px solid #ddd;
+  padding: 8px 0;
+}
+
+.ingreso { color: green; }
+.egreso { color: red; }
+
+.total {
+  font-size: 22px;
+  margin: 12px 0;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <!-- CUENTAS -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>Cuentas</h2>
+      <div class="add-btn" onclick="crearCuenta()">+</div>
+    </div>
+    <div id="listaCuentas"></div>
+  </div>
+
+  <!-- MOVIMIENTOS -->
+  <div class="main">
+    <h2 id="titulo">Selecciona una cuenta</h2>
+
+    <div id="panel" style="display:none">
+      <input type="date" id="fecha">
+      <input type="number" id="monto" placeholder="Monto">
+      <input type="text" id="desc" placeholder="Descripción">
+
+      <select id="tipo">
+        <option value="ingreso">Ingreso</option>
+        <option value="egreso">Egreso</option>
+      </select>
+
+      <button onclick="agregar()">Agregar movimiento</button>
+
+      <div class="total">
+        Total: <strong id="total">$0</strong>
+      </div>
+
+      <div id="movs"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("cuentasApp")) || {};
+let actual = null;
+
+function guardar() {
+  localStorage.setItem("cuentasApp", JSON.stringify(data));
+}
+
+function crearCuenta() {
+  const nombre = prompt("Nombre de la cuenta:");
+  if (!nombre || data[nombre]) return;
+  data[nombre] = [];
+  guardar();
+  renderCuentas();
+}
+
+function borrarCuenta(nombre) {
+  if (!confirm(`¿Borrar la cuenta "${nombre}" y TODOS sus movimientos?`)) return;
+
+  delete data[nombre];
+  if (actual === nombre) {
+    actual = null;
+    document.getElementById("panel").style.display = "none";
+    document.getElementById("titulo").innerText = "Selecciona una cuenta";
+  }
+  guardar();
+  renderCuentas();
+}
+
+function renderCuentas() {
+  const cont = document.getElementById("listaCuentas");
+  cont.innerHTML = "";
+
+  Object.keys(data).forEach(c => {
+    const d = document.createElement("div");
+    d.className = "cuenta" + (c === actual ? " activa" : "");
+
+    const nombre = document.createElement("span");
+    nombre.innerText = c;
+    nombre.onclick = () => seleccionar(c);
+
+    const del = document.createElement("span");
+    del.innerText = "🗑";
+    del.className = "delete";
+    del.onclick = (e) => {
+      e.stopPropagation();
+      borrarCuenta(c);
+    };
+
+    d.appendChild(nombre);
+    d.appendChild(del);
+    cont.appendChild(d);
+  });
+}
+
+function seleccionar(c) {
+  actual = c;
+  document.getElementById("titulo").innerText = c;
+  document.getElementById("panel").style.display = "block";
+  renderMovs();
+}
+
+function agregar() {
+  const fecha = document.getElementById("fecha").value;
+  const monto = parseFloat(document.getElementById("monto").value);
+  const desc = document.getElementById("desc").value;
+  const tipo = document.getElementById("tipo").value;
+
+  if (!fecha || !monto || !desc) return;
+
+  data[actual].push({ fecha, monto, desc, tipo });
+  guardar();
+
+  document.getElementById("monto").value = "";
+  document.getElementById("desc").value = "";
+  renderMovs();
+}
+
+function renderMovs() {
+  const cont = document.getElementById("movs");
+  cont.innerHTML = "";
+  let total = 0;
+
+  data[actual].forEach(m => {
+    total += m.tipo === "ingreso" ? m.monto : -m.monto;
+
+    const d = document.createElement("div");
+    d.className = "mov";
+    d.innerHTML = `
+      <strong>${m.fecha}</strong><br>
+      ${m.desc}<br>
+      <span class="${m.tipo}">
+        ${m.tipo === "ingreso" ? "+" : "-"}$${m.monto}
+      </span>
+    `;
+    cont.appendChild(d);
+  });
+
+  document.getElementById("total").innerText = "$" + total;
+}
+
+renderCuentas();
+</script>
+
+</body>
+</html>
